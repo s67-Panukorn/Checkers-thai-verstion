@@ -4,7 +4,7 @@ class GameCheckers:
     def __init__(self, root) :
         self.root = root
         self.root.title("Checkers (Thai version)")
-        self.square_size = 100
+        self.square_size = 100 
         self.canvas = Canvas(self.root,width=self.square_size*8,height=self.square_size*8)
         self.canvas.pack()
         self.data = [["0","B","0","B","0","B","0","B"],
@@ -18,9 +18,13 @@ class GameCheckers:
         self.trun = "white"
         self.createTable()
     
-    
+    def createKing(self, i, j, team, state="disable"): # method ใช้สร้างตัวฮอส(King)โดยไม่ต้องเขียนยาว
+        self.canvas.create_oval(j*self.square_size+(self.square_size*10/100),i*self.square_size+(self.square_size*10/100),j*self.square_size+self.square_size-(self.square_size*10/100),i*self.square_size+self.square_size-(self.square_size*10/100),width=0,fill=team,tags=f"Pawn{i}{j}",state=state)
+        self.canvas.create_oval(j*self.square_size+(self.square_size*40/100),i*self.square_size+(self.square_size*40/100),j*self.square_size+self.square_size-(self.square_size*40/100),i*self.square_size+self.square_size-(self.square_size*40/100),outline="",fill= "silver",tags=f"Pawn{i}{j}",state=state)
+        self.canvas.tag_bind(f"Pawn{i}{j}","<Button-1>",lambda event, i=i,j=j,team=team:self.hilighte_chanel(i, j, team))
+        
     def createPawn(self, i, j, team, state="disable"): # method ใช้สร้างตัวหมากโดยไม่ต้องเขียนยาว
-        self.canvas.create_oval(j*self.square_size+10,i*self.square_size+10,j*self.square_size+self.square_size-10,i*self.square_size+self.square_size-10,width=0,fill=team,tags=f"Pawn{i}{j}",state=state)
+        self.canvas.create_oval(j*self.square_size+(self.square_size*10/100),i*self.square_size+(self.square_size*10/100),j*self.square_size+self.square_size-(self.square_size*10/100),i*self.square_size+self.square_size-(self.square_size*10/100),width=0,fill=team,tags=f"Pawn{i}{j}",state=state)
         self.canvas.tag_bind(f"Pawn{i}{j}","<Button-1>",lambda event, i=i,j=j,team=team:self.hilighte_chanel(i, j, team))
 
     
@@ -38,13 +42,17 @@ class GameCheckers:
                     self.createPawn(i, j, "black")
                 elif (self.data[i][j] == "W"):
                     self.createPawn(i, j, "white")
-                
+                elif (self.data[i][j] == "HB"):
+                    self.createKing(i, j, 'black')
+                elif (self.data[i][j] == "HW"):
+                    self.createKing(i, j, 'white')
+                    
                 # ทำให้สถานะ(state)ของตัวหมากสามารถกดได้ปกติ หากเป็นเทิร์นของฝ่ายนั้น
                 if (self.trun == "black"):
-                    if self.data[i][j] == "B":
+                    if "B" in self.data[i][j]:
                         self.canvas.itemconfigure(f"Pawn{i}{j}",outline="",width=0,state="normal")
                 else:
-                    if self.data[i][j] == "W":
+                    if "W" in self.data[i][j]:
                         self.canvas.itemconfigure(f"Pawn{i}{j}",outline="",width=0,state="normal")       
 
 
@@ -74,7 +82,8 @@ class GameCheckers:
                     self.canvas.itemconfigure(f"Chanel{i+2}{j-2}",fill="#39E75F" ,state="normal")
                     self.canvas.tag_bind(f"Chanel{i+2}{j-2}","<Button-1>",lambda event, i=i, j=j, chanel_i = i+2, chanel_j = j-2, delete_i = i+1, delete_j = j-1:self.move_pawn(i, j, chanel_i, chanel_j, team, delete_i, delete_j))
             else:
-                pass
+                self.hilighte_King(i, j, "black")
+                    
         else:
             if (self.data[i][j]=="W"): # ตัวหมากธรรมดา
                 # กรณีเดินทั่วไป
@@ -98,34 +107,69 @@ class GameCheckers:
                     self.canvas.itemconfigure(f"Chanel{i-2}{j-2}",fill="#39E75F" ,state="normal")
                     self.canvas.tag_bind(f"Chanel{i-2}{j-2}","<Button-1>",lambda event, i=i, j=j, chanel_i = i-2, chanel_j = j-2, delete_i = i-1, delete_j = j-1:self.move_pawn(i, j, chanel_i, chanel_j, team, delete_i, delete_j))
             else:
-                pass
+                self.hilighte_King(i, j, "white")
             
             
-    def move_pawn(self, pawn_i, pawn_j, chanel_i, chanel_j, team, delete_i=0,delete_j=0):
+    def move_pawn(self, pawn_i, pawn_j, chanel_i, chanel_j, team, delete_i=0,delete_j=0,king=False):
+        # pawn_ i,j คือตำแหน่งของตัวหมากที่กดเดิน
+        # chanel_ i,j คือตำแหน่งของช่องที่ตัวหมากนั้นเดินไป
+        # delete_ i,j คือตำแหน่งของตัวหมากที่โดนกิน
         if(delete_i == 0 and delete_j == 0): # กรณีเดินปกติ
-            # สร้างวงกลมใหม่ในช่องที่กด
-            self.createPawn(chanel_i, chanel_j, team)
+            # สร้างวงกลมใหม่ในช่องที่กด ถ้าในกรณีที่ฮอสเดินจะส่งพารามิเตอร์ king เข้ามาเป็น True
+            if ( team == "black" ):
+                if (chanel_i == 7 or king):
+                    self.createKing(chanel_i, chanel_j, team)
+                    self.data[chanel_i][chanel_j] = "HB"
+                else:
+                    self.createPawn(chanel_i, chanel_j, team)
+                    self.data[chanel_i][chanel_j] = "B"
+            else:
+                if (chanel_i == 0 or king):
+                    self.createKing(chanel_i, chanel_j, team)
+                    self.data[chanel_i][chanel_j] = "HW"
+                else:
+                    self.createPawn(chanel_i, chanel_j, team)
+                    self.data[chanel_i][chanel_j] = "W"
             # ลบวงกลมอันเก่า
             self.canvas.delete(f"Pawn{pawn_i}{pawn_j}")
             # เปลี่ยนค่าใน array 
             self.data[pawn_i][pawn_j] = "1"
-            self.data[chanel_i][chanel_j] = team[0].upper()
             # สลับเทิร์นและเช็คว่าอีกฝั่งสามารถกินได้ไหม
             self.reset_widget(self.trun)
             self.check_canAttack(self.trun)
         else: # กรณีที่กิน
-            # สร้างวงกลมใหม่ในช่องที่กด
-            self.createPawn(chanel_i, chanel_j, team, "normal")
+            # สร้างวงกลมใหม่ในช่องที่กด  ถ้าในกรณีที่ฮอสเดินจะส่งพารามิเตอร์ king เข้ามาเป็น True
+            if ( team == "black" ):
+                if (chanel_i == 7 or king):
+                    self.createKing(chanel_i, chanel_j, team)
+                    self.data[chanel_i][chanel_j] = "HB"
+                else:
+                    self.createPawn(chanel_i, chanel_j, team)
+                    self.data[chanel_i][chanel_j] = "B"
+            else:
+                if (chanel_i == 0 or king):
+                    self.createKing(chanel_i, chanel_j, team)
+                    self.data[chanel_i][chanel_j] = "HW"
+                else:
+                    self.createPawn(chanel_i, chanel_j, team)
+                    self.data[chanel_i][chanel_j] = "W"
             # ลบวงกลมอันเก่า
             self.canvas.delete(f"Pawn{pawn_i}{pawn_j}")
             self.canvas.delete(f"Pawn{delete_i}{delete_j}")
             # เปลี่ยนค่าใน array 
             self.data[pawn_i][pawn_j] = "1"
             self.data[delete_i][delete_j] = "1"
-            self.data[chanel_i][chanel_j] = team[0].upper()
             # เช็คว่าสามารถกินต่อได้ไหม
             if(team == 'black'):
-                if  ((chanel_i < 6 and chanel_j < 6 and (self.data[chanel_i+1][chanel_j+1] == "W" or self.data[chanel_i+1][chanel_j+1] == "HW") and self.data[chanel_i+2][chanel_j+2] == "1")
+                # เช็คของฮอส บน-ล่าง ซ้าย-ขวา
+                if king and (self.check_canAttackKing(chanel_i, chanel_j, 'B', 'R', "black") or self.check_canAttackKing(chanel_i, chanel_j, 'B', 'L', "black") or self.check_canAttackKing(chanel_i, chanel_j, 'T', 'R', "black") or self.check_canAttackKing(chanel_i, chanel_j, 'T', 'L', "black")):
+                    for i in range(8):
+                        for j in range(8):
+                            self.canvas.itemconfigure(f"Pawn{i}{j}",outline="",width=0,state="disable")
+                    self.canvas.itemconfigure(f"Pawn{chanel_i}{chanel_j}",outline="green",width=3,state="normal")
+                    self.hilighte_chanel(chanel_i, chanel_j, 'black')
+                # เช็คของหมากธรรมดา
+                elif  (not king and (chanel_i < 6 and chanel_j < 6 and (self.data[chanel_i+1][chanel_j+1] == "W" or self.data[chanel_i+1][chanel_j+1] == "HW") and self.data[chanel_i+2][chanel_j+2] == "1")
                     or 
                     (chanel_i < 6 and chanel_j > 1 and (self.data[chanel_i+1][chanel_j-1] == "W" or self.data[chanel_i+1][chanel_j-1] == "HW") and self.data[chanel_i+2][chanel_j-2] == "1")):
                     for i in range(8):
@@ -138,7 +182,15 @@ class GameCheckers:
                     self.reset_widget(self.trun)
                     self.check_canAttack(self.trun)
             else:
-                if  ((chanel_i > 1 and chanel_j < 6 and (self.data[chanel_i-1][chanel_j+1] == "B" or self.data[chanel_i-1][chanel_j+1] == "HB") and self.data[chanel_i-2][chanel_j+2] == "1" )
+                # เช็คของฮอส บน-ล่าง ซ้าย-ขวา
+                if king and (self.check_canAttackKing(chanel_i, chanel_j, 'B', 'R', "white") or self.check_canAttackKing(chanel_i, chanel_j, 'B', 'L', "white") or self.check_canAttackKing(chanel_i, chanel_j, 'T', 'R', "white") or self.check_canAttackKing(chanel_i, chanel_j, 'T', 'L', "white")):
+                    for i in range(8):
+                        for j in range(8):
+                            self.canvas.itemconfigure(f"Pawn{i}{j}",outline="",width=0,state="disable")
+                    self.canvas.itemconfigure(f"Pawn{chanel_i}{chanel_j}",outline="green",width=3,state="normal")
+                    self.hilighte_chanel(chanel_i, chanel_j, 'white')
+                # เช็คของหมากธรรมดา  
+                elif (not king and (chanel_i > 1 and chanel_j < 6 and (self.data[chanel_i-1][chanel_j+1] == "B" or self.data[chanel_i-1][chanel_j+1] == "HB") and self.data[chanel_i-2][chanel_j+2] == "1" )
                     or 
                     (chanel_i > 1 and chanel_j > 1 and (self.data[chanel_i-1][chanel_j-1] == "B" or self.data[chanel_i-1][chanel_j-1] == "HB") and self.data[chanel_i-2][chanel_j-2] == "1")):
                     for i in range(8):
@@ -152,6 +204,128 @@ class GameCheckers:
                     self.check_canAttack(self.trun)
     
     
+    def hilighte_King(self, i, j, team):
+        check_team = 'W' if team == 'black' else 'B'
+            
+        # เดินปกติ
+        if not self.check_canAttackKing(i, j, 'B', 'R', team) and not self.check_canAttackKing(i, j, 'B', 'L', team) and not self.check_canAttackKing(i, j, 'T', 'R', team) and not self.check_canAttackKing(i, j, 'T', 'L', team):
+            # ล่างขวา
+            for index in range(8):
+                if (i+index < 7 and j+index < 7 and self.data[i+1+index][j+1+index] != "1"):
+                    break
+                elif (i+index < 7 and j+index < 7 and self.data[i+1+index][j+1+index] == "1"):
+                    self.canvas.itemconfigure(f"Chanel{i+1+index}{j+1+index}",fill="#39E75F" ,state="normal")
+                    self.canvas.tag_bind(f"Chanel{i+1+index}{j+1+index}","<Button-1>",lambda event, i=i, j=j, chanel_i = i+1+index, chanel_j = j+1+index:self.move_pawn(i, j, chanel_i, chanel_j, team, king=True))
+            # ล่างซ้าย
+            for index in range(8):
+                if (i+index < 7 and j-index > 0 and self.data[i+1+index][j-1-index] != "1"):
+                    break
+                elif (i+index < 7 and j-index > 0 and self.data[i+1+index][j-1-index] == "1"):
+                    self.canvas.itemconfigure(f"Chanel{i+1+index}{j-1-index}",fill="#39E75F" ,state="normal")
+                    self.canvas.tag_bind(f"Chanel{i+1+index}{j-1-index}","<Button-1>",lambda event, i=i, j=j, chanel_i = i+1+index, chanel_j = j-1-index:self.move_pawn(i, j, chanel_i, chanel_j, team, king=True))
+            # บนขวา
+            for index in range(8):
+                if (i-index > 0 and j+index < 7 and self.data[i-1-index][j+1+index] != "1"):
+                    break
+                elif (i-index > 0 and j+index < 7 and self.data[i-1-index][j+1+index] == "1"):
+                    self.canvas.itemconfigure(f"Chanel{i-1-index}{j+1+index}",fill="#39E75F" ,state="normal")
+                    self.canvas.tag_bind(f"Chanel{i-1-index}{j+1+index}","<Button-1>",lambda event, i=i, j=j, chanel_i = i-1-index, chanel_j = j+1+index:self.move_pawn(i, j, chanel_i, chanel_j, team, king=True))
+            # บนซ้าย
+            for index in range(8):
+                if (i-index > 0 and j-index > 0 and self.data[i-1-index][j-1-index] != "1"):
+                    break
+                elif (i-index > 0 and j-index > 0 and self.data[i-1-index][j-1-index] == "1"):
+                    self.canvas.itemconfigure(f"Chanel{i-1-index}{j-1-index}",fill="#39E75F" ,state="normal")
+                    self.canvas.tag_bind(f"Chanel{i-1-index}{j-1-index}","<Button-1>",lambda event, i=i, j=j, chanel_i = i-1-index, chanel_j = j-1-index:self.move_pawn(i, j, chanel_i, chanel_j, team, king=True))
+        # กินได้
+        else:    
+            # เช็คล่างขวากินได้ไหม
+            if self.check_canAttackKing(i, j, 'B', 'R', team):
+                for index in range(8):
+                    if (i+index < 6 and j+index < 6 and check_team in self.data[i+1+index][j+1+index] and self.data[i+2+index][j+2+index] == "1"):
+                        self.canvas.itemconfigure(f"Chanel{i+1+index}{j+1+index}",fill="#EB4343")
+                        self.canvas.itemconfigure(f"Chanel{i+2+index}{j+2+index}",fill="#39E75F" ,state="normal")
+                        self.canvas.tag_bind(f"Chanel{i+2+index}{j+2+index}","<Button-1>",lambda event, i=i, j=j, chanel_i = i+2+index, chanel_j = j+2+index, delete_i = i+1+index, delete_j = j+1+index:self.move_pawn(i, j, chanel_i, chanel_j, team, delete_i, delete_j, king=True))
+                        break
+            # เช็คล่างซ้ายกินได้ไหม
+            if self.check_canAttackKing(i, j, 'B', 'L', team):
+                for index in range(8):
+                    if (i+index < 6 and j-index > 1 and check_team in self.data[i+1+index][j-1-index] and self.data[i+2+index][j-2-index] == "1"):
+                        self.canvas.itemconfigure(f"Chanel{i+1+index}{j-1-index}",fill="#EB4343")
+                        self.canvas.itemconfigure(f"Chanel{i+2+index}{j-2-index}",fill="#39E75F" ,state="normal")
+                        self.canvas.tag_bind(f"Chanel{i+2+index}{j-2-index}","<Button-1>",lambda event, i=i, j=j, chanel_i = i+2+index, chanel_j = j-2-index, delete_i = i+1+index, delete_j = j-1-index:self.move_pawn(i, j, chanel_i, chanel_j, team, delete_i, delete_j, king=True))
+                        break
+            # เช็คบนขวากินได้ไหม
+            if self.check_canAttackKing(i, j, 'T', 'R', team):
+                for index in range(8):
+                    if (i+index > 1 and j+index < 6 and check_team in self.data[i-1-index][j+1+index] and self.data[i-2-index][j+2+index] == "1"):
+                        self.canvas.itemconfigure(f"Chanel{i-1-index}{j+1+index}",fill="#EB4343")
+                        self.canvas.itemconfigure(f"Chanel{i-2-index}{j+2+index}",fill="#39E75F" ,state="normal")
+                        self.canvas.tag_bind(f"Chanel{i-2-index}{j+2+index}","<Button-1>",lambda event, i=i, j=j, chanel_i = i-2-index, chanel_j = j+2+index, delete_i = i-1-index, delete_j = j+1+index:self.move_pawn(i, j, chanel_i, chanel_j, team, delete_i, delete_j, king=True))
+                        break
+            # เช็คบนซ้ายกินได้ไหม
+            if self.check_canAttackKing(i, j, 'T', 'L', team):
+                for index in range(8):
+                    if (i-index > 1 and j-index > 1 and check_team in self.data[i-1-index][j-1-index] and self.data[i-2-index][j-2-index] == "1"):
+                        self.canvas.itemconfigure(f"Chanel{i-1-index}{j-1-index}",fill="#EB4343")
+                        self.canvas.itemconfigure(f"Chanel{i-2-index}{j-2-index}",fill="#39E75F" ,state="normal")
+                        self.canvas.tag_bind(f"Chanel{i-2-index}{j-2-index}","<Button-1>",lambda event, i=i, j=j, chanel_i = i-2-index, chanel_j = j-2-index, delete_i = i-1-index, delete_j = j-1-index:self.move_pawn(i, j, chanel_i, chanel_j, team, delete_i, delete_j, king=True))
+                        break     
+           
+    # ฟังก์ชันเช็คว่าฮอสนั้นสามารถกินได้ไหม
+    def check_canAttackKing(self, i, j, check_i, check_j, team):
+        check_team = 'W' if team == 'black' else 'B'
+        # เช็คล่างขวา Bottom & Right
+        if (check_i == 'B' and check_j == 'R'):
+            for n in range(8):
+                if (i+1+n < 8 and j+1+n < 8 and self.data[i+1+n][j+1+n] == '1'):
+                    continue
+                elif (i+1+n < 8 and j+1+n < 8 and team[0].upper() in self.data[i+1+n][j+1+n]):
+                    return False
+                elif (i+1+n < 8 and j+1+n < 8 and check_team in self.data[i+1+n][j+1+n]):
+                    if (i+2+n < 8 and j+2+n < 8 and self.data[i+2+n][j+2+n] == "1"):
+                        return True
+                    else:
+                        return False
+        # เช็คล่างซ้าย Bottom & Left
+        elif (check_i == 'B' and check_j == 'L'):
+            for n in range(8):
+                if (i+1+n < 8 and j-1-n >= 0 and self.data[i+1+n][j-1-n] == '1'):
+                    continue
+                elif (i+1+n < 8 and j-1-n >= 0 and team[0].upper() in self.data[i+1+n][j-1-n]):
+                    return False
+                elif (i+1+n < 8 and j-1-n >= 0 and check_team in self.data[i+1+n][j-1-n]):
+                    if (i+2+n < 8 and j-2-n >= 0 and self.data[i+2+n][j-2-n] == "1"):
+                        return True
+                    else:
+                        return False
+        # เช็คล่างขวา Top & Right
+        elif (check_i == 'T' and check_j == 'R'):
+            for n in range(8):
+                if (i-1-n >= 0 and j+1+n < 8 and self.data[i-1-n][j+1+n] == '1'):
+                    continue
+                elif (i-1-n >= 0 and j+1+n < 8 and team[0].upper() in self.data[i-1-n][j+1+n]):
+                    return False
+                elif (i-1-n >= 0 and j+1+n < 8 and check_team in self.data[i-1-n][j+1+n]):
+                    if (i-2-n >= 0 and j+2+n < 8 and self.data[i-2-n][j+2+n] == "1"):
+                        return True
+                    else:
+                        return False
+        # เช็คล่างขวา Top & Left
+        elif (check_i == 'T' and check_j == 'L'):
+            for n in range(8):
+                if (i-1-n >= 0 and j-1-n >= 0 and self.data[i-1-n][j-1-n] == '1'):
+                    continue
+                elif (i-1-n >= 0 and j-1-n >= 0 and team[0].upper() in self.data[i-1-n][j-1-n]):
+                    return False
+                elif (i-1-n >= 0 and j-1-n >= 0 and check_team in self.data[i-1-n][j-1-n]):
+                    if (i-2-n >= 0 and j-2-n >= 0 and self.data[i-2-n][j-2-n] == "1"):
+                        return True
+                    else:
+                        return False
+        return False
+    
+    
     def check_canAttack(self, turn):
         canAttack = False # ตัวแปรที่บอกว่ามีตัวที่สามารถกินได้ไหม
         # ลูปนี้จะทำให้กดได้เฉพาะตัวที่สามารถกินได้และจะทำให้ตัวที่กินไม่ได้ทั้งหมดกดไม่ได้
@@ -160,23 +334,33 @@ class GameCheckers:
                 self.canvas.itemconfigure(f"Pawn{i}{j}",outline="",width=0,state="disable")
                 if(turn == 'black'):
                     if (self.data[i][j] == "B"):
-                        if ((i < 6 and j < 6 and (self.data[i+1][j+1] == "W" or self.data[i+1][j+1] == "HW") and self.data[i+2][j+2] == "1") or (i < 6 and j > 1 and (self.data[i+1][j-1] == "W" or self.data[i+1][j-1] == "HW") and self.data[i+2][j-2] == "1")):
+                        if ((i < 6 and j < 6 and "W" in self.data[i+1][j+1] and self.data[i+2][j+2] == "1") or (i < 6 and j > 1 and "W" in self.data[i+1][j-1] and self.data[i+2][j-2] == "1")):
                             self.canvas.itemconfigure(f"Pawn{i}{j}",outline="red",width=3,state="normal")
                             canAttack = True
+                    if (self.data[i][j] == "HB"):
+                        if (self.check_canAttackKing(i, j, 'B', 'R', "black") or self.check_canAttackKing(i, j, 'B', 'L', "black") or self.check_canAttackKing(i, j, 'T', 'R', "black") or self.check_canAttackKing(i, j, 'T', 'L', "black")):
+                            self.canvas.itemconfigure(f"Pawn{i}{j}",outline="red",width=3,state="normal")
+                            canAttack = True
+                    
                 else:
                     if (self.data[i][j] == "W"):
-                        if ((i > 1 and j < 6 and (self.data[i-1][j+1] == "B" or self.data[i-1][j+1] == "HB") and self.data[i-2][j+2] == "1" ) or (i > 1 and j > 1 and (self.data[i-1][j-1] == "B" or self.data[i-1][j-1] == "HB") and self.data[i-2][j-2] == "1")):
+                        if ((i > 1 and j < 6 and "B" in self.data[i-1][j+1] and self.data[i-2][j+2] == "1" ) or (i > 1 and j > 1 and "B" in self.data[i-1][j-1] and self.data[i-2][j-2] == "1")):
                             self.canvas.itemconfigure(f"Pawn{i}{j}",outline="red",width=3,state="normal")
                             canAttack = True
+                    if (self.data[i][j] == "HW"):
+                        if (self.check_canAttackKing(i, j, 'B', 'R', "white") or self.check_canAttackKing(i, j, 'B', 'L', "white") or self.check_canAttackKing(i, j, 'T', 'R', "white") or self.check_canAttackKing(i, j, 'T', 'L', "white")):
+                            self.canvas.itemconfigure(f"Pawn{i}{j}",outline="red",width=3,state="normal")
+                            canAttack = True
+        
         # เงื่อนไขนี้มีเพื่อในกรณีที่ไม่มีตัวไหนสามารถกินได้เลยจะทำให้หมากของฝ่ายนั้นสามารถกดเดินได้
         if not canAttack :
             for i in range(8):
                 for j in range(8):       
                     if(turn == 'black'):
-                        if (self.data[i][j] == "B"):
+                        if ("B" in self.data[i][j]):
                             self.canvas.itemconfigure(f"Pawn{i}{j}",state="normal")
                     else:
-                        if (self.data[i][j] == "W"):
+                        if ("W" in self.data[i][j]):
                             self.canvas.itemconfigure(f"Pawn{i}{j}",state="normal")
           
                              
@@ -187,7 +371,7 @@ class GameCheckers:
                 self.canvas.itemconfigure(f"Pawn{i}{j}",outline="",width=0)
                 self.canvas.itemconfigure(f"Chanel{i}{j}",fill="#DAC6A3" if self.data[i][j] == "0" else "#95561E" ,state="disable") 
                 self.canvas.tag_bind(f"Chanel{i}{j}","<Button-1>")
-        # หากมีการส่งพารามิเตอร์ turn มาด้วยจะทำการสลับเทิร์นหากไม่มีจะทำงานแค่ลูปด้านบน
+ 
         if (turn == "black"):
             for row in range(8):
                 for column in range(8):
