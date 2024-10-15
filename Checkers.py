@@ -4,9 +4,11 @@ class GameCheckers:
     def __init__(self, root) :
         self.root = root
         self.root.title("Checkers (Thai version)")
-        self.square_size = 100 
-        self.canvas = Canvas(self.root,width=self.square_size*8,height=self.square_size*8)
-        self.canvas.pack()
+        self.square_size = 100 # Recommend ไม่ควรเป็นประภท float 
+        self.canvas = Canvas(self.root,width=self.square_size*8,height=self.square_size*8,background="#E4DDD4")
+        self.info = Canvas(self.root, width=self.square_size*4, height=self.square_size*8,background="#E4DDD4")
+        self.info.grid(row=0, column=1)
+        self.canvas.grid(row=0, column=0)
         self.data = [["0","B","0","B","0","B","0","B"],
                      ["B","0","B","0","B","0","B","0"],
                      ["0","1","0","1","0","1","0","1"],
@@ -15,9 +17,24 @@ class GameCheckers:
                      ["1","0","1","0","1","0","1","0"],
                      ["0","W","0","W","0","W","0","W"],
                      ["W","0","W","0","W","0","W","0"]]
-        self.trun = "white"
+        self.turn = "white"
         self.createTable()
+        self.information()
     
+    def endGame(self):
+        winner = "black" if self.turn == "white" else "white"
+        self.info.delete(self.txtTurn)
+        self.info.delete(self.recTurn)
+        self.canvas.create_rectangle(0, 0, self.square_size*8, self.square_size*8, fill=winner, outline='')
+        self.canvas.create_text(self.square_size*4,self.square_size*3,text="The Winner is ...", font=('Times', int(self.square_size*40/100), 'italic'), fill=self.turn)
+        self.canvas.create_text(self.square_size*4,self.square_size*4,text=winner.capitalize()+" team !!!", font=('Times', int(self.square_size*75/100), 'bold italic'), fill=self.turn)
+        
+    def information(self):
+        self.info.create_text(self.square_size*2,int(self.square_size*45/100),text="Welcome to", font=('Times', int(self.square_size*20/100), 'italic'), fill='#0a0a0a')
+        self.info.create_text(self.square_size*2,int(self.square_size*90/100),text="Checkers", font=('Times', int(self.square_size*55/100), 'bold'), fill='#000')
+        self.txtTurn = self.info.create_text(self.square_size*2, self.square_size*2,text="Turn  :  "+self.turn.capitalize(), font=('Helvetica', int(self.square_size*15/100), 'bold'), fill='#0a0a0a')
+        self.recTurn = self.info.create_rectangle(int(self.square_size*2-self.square_size*80/100), int(self.square_size*2.2), int(self.square_size*2+self.square_size*80/100), int(self.square_size*2.2)+int(self.square_size*35/100), fill=self.turn, outline="silver")
+        
     def createKing(self, i, j, team, state="disable"): # method ใช้สร้างตัวฮอส(King)โดยไม่ต้องเขียนยาว
         self.canvas.create_oval(j*self.square_size+(self.square_size*10/100),i*self.square_size+(self.square_size*10/100),j*self.square_size+self.square_size-(self.square_size*10/100),i*self.square_size+self.square_size-(self.square_size*10/100),width=0,fill=team,tags=f"Pawn{i}{j}",state=state)
         self.canvas.create_oval(j*self.square_size+(self.square_size*40/100),i*self.square_size+(self.square_size*40/100),j*self.square_size+self.square_size-(self.square_size*40/100),i*self.square_size+self.square_size-(self.square_size*40/100),outline="",fill= "silver",tags=f"Pawn{i}{j}",state=state)
@@ -27,15 +44,14 @@ class GameCheckers:
         self.canvas.create_oval(j*self.square_size+(self.square_size*10/100),i*self.square_size+(self.square_size*10/100),j*self.square_size+self.square_size-(self.square_size*10/100),i*self.square_size+self.square_size-(self.square_size*10/100),width=0,fill=team,tags=f"Pawn{i}{j}",state=state)
         self.canvas.tag_bind(f"Pawn{i}{j}","<Button-1>",lambda event, i=i,j=j,team=team:self.hilighte_chanel(i, j, team))
 
-    
     def createTable(self): # method ใช้สร้างตารางและตัวหมาก
         for i in range(8):
             for j in range(8):
                 # สร้างตาราง
                 if (self.data[i][j] == "0"):
-                    self.canvas.create_rectangle(j*self.square_size,i*self.square_size,j*self.square_size+self.square_size,i*self.square_size+self.square_size,fill="#DAC6A3",tags=f"Chanel{i}{j}",state="disabled")
+                    self.canvas.create_rectangle(j*self.square_size,i*self.square_size,j*self.square_size+self.square_size,i*self.square_size+self.square_size,fill="#DAC6A3",tags=f"Chanel{i}{j}",state="disabled",outline='')
                 else:
-                    self.canvas.create_rectangle(j*self.square_size,i*self.square_size,j*self.square_size+self.square_size,i*self.square_size+self.square_size,fill="#95561E",tags=f"Chanel{i}{j}",state="disabled")
+                    self.canvas.create_rectangle(j*self.square_size,i*self.square_size,j*self.square_size+self.square_size,i*self.square_size+self.square_size,fill="#95561E",tags=f"Chanel{i}{j}",state="disabled",outline='')
                 
                 # สร้างตัวหมาก
                 if (self.data[i][j] == "B"):
@@ -48,7 +64,7 @@ class GameCheckers:
                     self.createKing(i, j, 'white')
                     
                 # ทำให้สถานะ(state)ของตัวหมากสามารถกดได้ปกติ หากเป็นเทิร์นของฝ่ายนั้น
-                if (self.trun == "black"):
+                if (self.turn == "black"):
                     if "B" in self.data[i][j]:
                         self.canvas.itemconfigure(f"Pawn{i}{j}",outline="",width=0,state="normal")
                 else:
@@ -72,12 +88,12 @@ class GameCheckers:
                     self.canvas.tag_bind(f"Chanel{i+1}{j-1}","<Button-1>",lambda event, i=i, j=j, chanel_i = i+1, chanel_j = j-1:self.move_pawn(i, j, chanel_i, chanel_j, team))
                 # กรณีที่สามารถกินได้
                 # เช็คทางขวา
-                if (i < 6 and j < 6 and (self.data[i+1][j+1] == "W" or self.data[i+1][j+1] == "HW") and self.data[i+2][j+2] == "1"):
+                if (i < 6 and j < 6 and "W" in self.data[i+1][j+1] and self.data[i+2][j+2] == "1"):
                     self.canvas.itemconfigure(f"Chanel{i+1}{j+1}",fill="#EB4343")
                     self.canvas.itemconfigure(f"Chanel{i+2}{j+2}",fill="#39E75F" ,state="normal")
                     self.canvas.tag_bind(f"Chanel{i+2}{j+2}","<Button-1>",lambda event, i=i, j=j, chanel_i = i+2, chanel_j = j+2, delete_i = i+1, delete_j = j+1:self.move_pawn(i, j, chanel_i, chanel_j, team, delete_i, delete_j))
                 # เช็คทางซ้าย
-                if (i < 6 and j > 1 and (self.data[i+1][j-1] == "W" or self.data[i+1][j-1] == "HW") and self.data[i+2][j-2] == "1"):
+                if (i < 6 and j > 1 and "W" in self.data[i+1][j-1] and self.data[i+2][j-2] == "1"):
                     self.canvas.itemconfigure(f"Chanel{i+1}{j-1}",fill="#EB4343")
                     self.canvas.itemconfigure(f"Chanel{i+2}{j-2}",fill="#39E75F" ,state="normal")
                     self.canvas.tag_bind(f"Chanel{i+2}{j-2}","<Button-1>",lambda event, i=i, j=j, chanel_i = i+2, chanel_j = j-2, delete_i = i+1, delete_j = j-1:self.move_pawn(i, j, chanel_i, chanel_j, team, delete_i, delete_j))
@@ -97,12 +113,12 @@ class GameCheckers:
                     self.canvas.tag_bind(f"Chanel{i-1}{j-1}","<Button-1>",lambda event, i=i, j=j, chanel_i = i-1, chanel_j = j-1:self.move_pawn(i, j, chanel_i, chanel_j, team))
                 # กรณีที่สามารกินได้
                 # เช็คทางขวา
-                if (i > 1 and j < 6 and (self.data[i-1][j+1] == "B" or self.data[i-1][j+1] == "HB") and self.data[i-2][j+2] == "1" ):
+                if (i > 1 and j < 6 and "B" in self.data[i-1][j+1] and self.data[i-2][j+2] == "1" ):
                     self.canvas.itemconfigure(f"Chanel{i-1}{j+1}",fill="#EB4343")
                     self.canvas.itemconfigure(f"Chanel{i-2}{j+2}",fill="#39E75F" ,state="normal")
                     self.canvas.tag_bind(f"Chanel{i-2}{j+2}","<Button-1>",lambda event, i=i, j=j, chanel_i = i-2, chanel_j = j+2, delete_i = i-1, delete_j = j+1:self.move_pawn(i, j, chanel_i, chanel_j, team, delete_i, delete_j))
                 # เช็คทางซ้าย
-                if (i > 1 and j > 1 and (self.data[i-1][j-1] == "B" or self.data[i-1][j-1] == "HB") and self.data[i-2][j-2] == "1"):
+                if (i > 1 and j > 1 and "B" in self.data[i-1][j-1] and self.data[i-2][j-2] == "1"):
                     self.canvas.itemconfigure(f"Chanel{i-1}{j-1}",fill="#EB4343")
                     self.canvas.itemconfigure(f"Chanel{i-2}{j-2}",fill="#39E75F" ,state="normal")
                     self.canvas.tag_bind(f"Chanel{i-2}{j-2}","<Button-1>",lambda event, i=i, j=j, chanel_i = i-2, chanel_j = j-2, delete_i = i-1, delete_j = j-1:self.move_pawn(i, j, chanel_i, chanel_j, team, delete_i, delete_j))
@@ -135,8 +151,9 @@ class GameCheckers:
             # เปลี่ยนค่าใน array 
             self.data[pawn_i][pawn_j] = "1"
             # สลับเทิร์นและเช็คว่าอีกฝั่งสามารถกินได้ไหม
-            self.reset_widget(self.trun)
-            self.check_canAttack(self.trun)
+            self.reset_widget(self.turn)
+            self.check_canAttack(self.turn)
+            self.is_Loss()
         else: # กรณีที่กิน
             # สร้างวงกลมใหม่ในช่องที่กด  ถ้าในกรณีที่ฮอสเดินจะส่งพารามิเตอร์ king เข้ามาเป็น True
             if ( team == "black" ):
@@ -179,8 +196,9 @@ class GameCheckers:
                     self.hilighte_chanel(chanel_i, chanel_j, 'black')
                 else:
                     # สลับเทิร์นและเช็คว่าอีกฝั่งสามารถกินได้ไหม
-                    self.reset_widget(self.trun)
-                    self.check_canAttack(self.trun)
+                    self.reset_widget(self.turn)
+                    self.check_canAttack(self.turn)
+                    self.is_Loss()
             else:
                 # เช็คของฮอส บน-ล่าง ซ้าย-ขวา
                 if king and (self.check_canAttackKing(chanel_i, chanel_j, 'B', 'R', "white") or self.check_canAttackKing(chanel_i, chanel_j, 'B', 'L', "white") or self.check_canAttackKing(chanel_i, chanel_j, 'T', 'R', "white") or self.check_canAttackKing(chanel_i, chanel_j, 'T', 'L', "white")):
@@ -200,13 +218,13 @@ class GameCheckers:
                     self.hilighte_chanel(chanel_i, chanel_j, 'white')
                 else:
                     # สลับเทิร์นและเช็คว่าอีกฝั่งสามารถกินได้ไหม
-                    self.reset_widget(self.trun)
-                    self.check_canAttack(self.trun)
+                    self.reset_widget(self.turn)
+                    self.check_canAttack(self.turn)
+                    self.is_Loss()
     
     
     def hilighte_King(self, i, j, team):
-        check_team = 'W' if team == 'black' else 'B'
-            
+        check_team = 'W' if team == 'black' else 'B'   
         # เดินปกติ
         if not self.check_canAttackKing(i, j, 'B', 'R', team) and not self.check_canAttackKing(i, j, 'B', 'L', team) and not self.check_canAttackKing(i, j, 'T', 'R', team) and not self.check_canAttackKing(i, j, 'T', 'L', team):
             # ล่างขวา
@@ -325,7 +343,6 @@ class GameCheckers:
                         return False
         return False
     
-    
     def check_canAttack(self, turn):
         canAttack = False # ตัวแปรที่บอกว่ามีตัวที่สามารถกินได้ไหม
         # ลูปนี้จะทำให้กดได้เฉพาะตัวที่สามารถกินได้และจะทำให้ตัวที่กินไม่ได้ทั้งหมดกดไม่ได้
@@ -379,7 +396,10 @@ class GameCheckers:
                         self.canvas.itemconfigure(f"Pawn{row}{column}",outline="",width=0,state="disable")
                     elif ("W" in self.data[row][column]):
                         self.canvas.itemconfigure(f"Pawn{row}{column}",outline="",width=0,state="normal")
-            self.trun = "white"
+            self.turn = "white"
+            self.info.itemconfigure(self.txtTurn, text="Turn  :  "+self.turn.capitalize(), fill='#0a0a0a')
+            self.info.itemconfigure(self.recTurn, fill=self.turn)
+            
         elif (turn == "white"):
             for row in range(8):
                 for column in range(8):
@@ -387,7 +407,52 @@ class GameCheckers:
                         self.canvas.itemconfigure(f"Pawn{row}{column}",outline="",width=0,state="disable")
                     elif ("B" in self.data[row][column]):
                         self.canvas.itemconfigure(f"Pawn{row}{column}",outline="",width=0,state="normal")
-            self.trun = "black"
+            self.turn = "black"
+            self.info.itemconfigure(self.txtTurn, text="Turn  :  "+self.turn.capitalize(), fill='#0a0a0a')
+            self.info.itemconfigure(self.recTurn, fill=self.turn)
+            
+    def is_Loss(self):
+        loss = True
+        if (self.turn == 'black'):
+            for i in range(8):
+                for j in range(8):
+                    if(self.data[i][j] == 'B'):
+                        if ((i < 7 and j < 7 and self.data[i+1][j+1] == "1") or 
+                            (i < 7 and j > 0 and self.data[i+1][j-1] == "1") or 
+                            (i < 6 and j < 6 and "W" in self.data[i+1][j+1] and self.data[i+2][j+2] == "1") or 
+                            (i < 6 and j > 1 and "W" in self.data[i+1][j-1] and self.data[i+2][j-2] == "1")):
+                            loss = False
+                    elif (self.data[i][j] == 'HB'):
+                        if ((i < 7 and j < 7 and self.data[i+1][j+1] == "1") or
+                            (i < 7 and j > 0 and self.data[i+1][j-1] == "1") or
+                            (i > 0 and j < 7 and self.data[i-1][j+1] == "1") or
+                            (i > 0 and j > 0 and self.data[i-1][j-1] == "1") or
+                            (self.check_canAttackKing(i, j, 'B', 'R', self.turn)) or 
+                            (self.check_canAttackKing(i, j, 'B', 'L', self.turn)) or 
+                            (self.check_canAttackKing(i, j, 'T', 'R', self.turn)) or 
+                            (self.check_canAttackKing(i, j, 'T', 'L', self.turn)) ):
+                            loss = False
+        else:
+            for i in range(8):
+                for j in range(8):
+                    if(self.data[i][j] == 'W'):
+                        if ((i > 0 and j < 7 and self.data[i-1][j+1] == "1") or 
+                            (i > 0 and j > 0 and self.data[i-1][j-1] == "1") or 
+                            (i > 1 and j < 6 and "B" in self.data[i-1][j+1] and self.data[i-2][j+2] == "1") or 
+                            (i > 1 and j > 1 and "B" in self.data[i-1][j-1] and self.data[i-2][j-2] == "1")):
+                            loss = False
+                    elif (self.data[i][j] == 'HW'):
+                        if ((i < 7 and j < 7 and self.data[i+1][j+1] == "1") or
+                            (i < 7 and j > 0 and self.data[i+1][j-1] == "1") or
+                            (i > 0 and j < 7 and self.data[i-1][j+1] == "1") or
+                            (i > 0 and j > 0 and self.data[i-1][j-1] == "1") or
+                            (self.check_canAttackKing(i, j, 'B', 'R', self.turn)) or 
+                            (self.check_canAttackKing(i, j, 'B', 'L', self.turn)) or 
+                            (self.check_canAttackKing(i, j, 'T', 'R', self.turn)) or 
+                            (self.check_canAttackKing(i, j, 'T', 'L', self.turn)) ):
+                            loss = False                   
+        if loss:
+            self.endGame()
 
                               
 root = Tk()
