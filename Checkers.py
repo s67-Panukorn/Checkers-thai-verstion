@@ -75,7 +75,9 @@ class GameCheckers:
                 while data != '':
                     row = []
                     for i in range(len(data)):
-                        if data[i] != " ":
+                        if data[i] == 'H':
+                            row.append(data[i]+data[i+1])
+                        elif data[i] != " " and data[i-1] != 'H':
                             row.append(data[i])
                     result.append(row)
                     data = file_data.readline().replace("\n",'')
@@ -528,8 +530,8 @@ class GameCheckers:
         if loss:
             self.endGame()
 
-filePath_data = "Data_Checkers.txt"
-filePath_turn = "Turn_Checkers.txt"            
+filePath_data = "A2-67-010126-1027-9_data.txt"
+filePath_turn = "A2-67-010126-1027-9_turn.txt"            
 root = Tk()
 game = GameCheckers(root)
 root.mainloop()
