@@ -1,10 +1,11 @@
 from tkinter import *
+from tkinter import messagebox
 
 class GameCheckers:
     def __init__(self, root) :
         self.root = root
         self.root.title("Checkers (Thai version)")
-        self.square_size = 100 # Recommend ไม่ควรเป็นประภท float 
+        self.square_size = 80 # Recommend ไม่ควรเป็นประภท float 
         self.canvas = Canvas(self.root,width=self.square_size*8,height=self.square_size*8,background="#E4DDD4")
         self.info = Canvas(self.root, width=self.square_size*4, height=self.square_size*8,background="#E4DDD4")
         self.info.grid(row=0, column=1)
@@ -21,25 +22,96 @@ class GameCheckers:
         self.createTable()
         self.information()
     
-    def endGame(self):
+    def endGame(self): # ฟังก์ชันจบเกม
         winner = "black" if self.turn == "white" else "white"
+        # ลบตัวบอกเทิร์น
         self.info.delete(self.txtTurn)
         self.info.delete(self.recTurn)
+        # ลบปุ่ม save และ load
+        self.btnSave.destroy()
+        self.btnLoad.destroy()
+        # สร้างปุ่มกดออก
+        self.btnExit = Button(self.info,text="Exit",font=('Helvetica', int(self.square_size*15/100), 'bold'), command = lambda:self.root.destroy())
+        self.btnExit.place(x=self.square_size, y=int(self.square_size*6), width=self.square_size*2, height=int(self.square_size*50/100))
+        # สร้างกราฟฟิกบอกฝ่ายที่ชนะ
         self.canvas.create_rectangle(0, 0, self.square_size*8, self.square_size*8, fill=winner, outline='')
         self.canvas.create_text(self.square_size*4,self.square_size*3,text="The Winner is ...", font=('Times', int(self.square_size*40/100), 'italic'), fill=self.turn)
         self.canvas.create_text(self.square_size*4,self.square_size*4,text=winner.capitalize()+" team !!!", font=('Times', int(self.square_size*75/100), 'bold italic'), fill=self.turn)
         
-    def information(self):
+    def information(self): # ฟังก์ชันสร้างแถบข้อมูลข้างเกม
+        # ตัวอักษรยินดีต้อนรับ
         self.info.create_text(self.square_size*2,int(self.square_size*45/100),text="Welcome to", font=('Times', int(self.square_size*20/100), 'italic'), fill='#0a0a0a')
         self.info.create_text(self.square_size*2,int(self.square_size*90/100),text="Checkers", font=('Times', int(self.square_size*55/100), 'bold'), fill='#000')
+        # ตัวบอกเทิร์น
         self.txtTurn = self.info.create_text(self.square_size*2, self.square_size*2,text="Turn  :  "+self.turn.capitalize(), font=('Helvetica', int(self.square_size*15/100), 'bold'), fill='#0a0a0a')
         self.recTurn = self.info.create_rectangle(int(self.square_size*2-self.square_size*80/100), int(self.square_size*2.2), int(self.square_size*2+self.square_size*80/100), int(self.square_size*2.2)+int(self.square_size*35/100), fill=self.turn, outline="silver")
+        # ปุ่ม Restart Save Load
+        self.btnRestart = Button(self.info,text="Restart",font=('Helvetica', int(self.square_size*15/100), 'bold'), command = lambda:self.restartGame())
+        self.btnRestart.place(x=self.square_size, y=int(self.square_size*5.2), width=self.square_size*2, height=int(self.square_size*50/100))
+        self.btnSave = Button(self.info,text="Save",font=('Helvetica', int(self.square_size*15/100), 'bold'), command = lambda:self.saveGame())
+        self.btnSave.place(x=self.square_size, y=int(self.square_size*6), width=self.square_size*2, height=int(self.square_size*50/100))
+        self.btnLoad = Button(self.info,text="Load",font=('Helvetica', int(self.square_size*15/100), 'bold'), command = lambda:self.loadGame())
+        self.btnLoad.place(x=self.square_size, y=int(self.square_size*6.8), width=self.square_size*2, height=int(self.square_size*50/100))
+    
+    def saveGame(self): # ฟังก์ชัน save จะเรียกใช้เมื่อกดปุ่ม save 
+        with open(filePath_turn, 'w', encoding="utf8") as file_turn:
+            file_turn.write(self.turn)
         
+        with open(filePath_data, 'w', encoding='utf8') as file_data:
+            for i in range(8):
+                for j in range(1,9):
+                    text = "\n" if j%8==0 and i != 7 else " " 
+                    file_data.write(self.data[i][j-1] + text)
+        messagebox.showinfo("Save complete","เราได้ทำการบันทึกข้อมูลเกมไว้แล้ว คุณสามารถเข้ามาอีกครั้งแเล้วกดปุ่ม Load เพื่อเล่นต่อได้")
+        
+    def loadGame(self): # ฟังก์ชัน load ไว้กลับมาเล่นใหม่ เรียกใช้เมื่อกดปุ่ม load
+        try:
+            with open(filePath_turn, 'r', encoding="utf8") as file_turn:
+                self.turn = file_turn.readline().replace("\n",'')
+                
+            with open(filePath_data, 'r', encoding='utf8') as file_data:
+                data = file_data.readline().replace("\n",'')
+                result = []
+                while data != '':
+                    row = []
+                    for i in range(len(data)):
+                        if data[i] != " ":
+                            row.append(data[i])
+                    result.append(row)
+                    data = file_data.readline().replace("\n",'')
+                self.data = result
+            self.info.delete(self.txtTurn)
+            self.info.delete(self.recTurn)
+            self.createTable()
+            self.information()
+        
+        except FileNotFoundError:
+            messagebox.showerror("FileNotFound","การโหลดเกมล้มเหลว เนื่องจากไม่พบไฟล์หรือคุณไม่เคยบันทึกเกมไว้")
+    
+    def restartGame(self): # ฟังก์ชันเริ่มเกมใหม่ เรียกใช้เมื่อกดปุ่ม restart
+        for i in range(8):
+            for j in range(8):
+                self.canvas.delete(f"Pawn{i}{j}")
+                self.canvas.delete(f"Chanel{i}{j}") 
+        self.info.delete(self.txtTurn)
+        self.info.delete(self.recTurn)
+        self.data = [["0","B","0","B","0","B","0","B"],
+                     ["B","0","B","0","B","0","B","0"],
+                     ["0","1","0","1","0","1","0","1"],
+                     ["1","0","1","0","1","0","1","0"],
+                     ["0","1","0","1","0","1","0","1"],
+                     ["1","0","1","0","1","0","1","0"],
+                     ["0","W","0","W","0","W","0","W"],
+                     ["W","0","W","0","W","0","W","0"]]
+        self.turn = "white"
+        self.createTable()
+        self.information()
+    
     def createKing(self, i, j, team, state="disable"): # method ใช้สร้างตัวฮอส(King)โดยไม่ต้องเขียนยาว
         self.canvas.create_oval(j*self.square_size+(self.square_size*10/100),i*self.square_size+(self.square_size*10/100),j*self.square_size+self.square_size-(self.square_size*10/100),i*self.square_size+self.square_size-(self.square_size*10/100),width=0,fill=team,tags=f"Pawn{i}{j}",state=state)
         self.canvas.create_oval(j*self.square_size+(self.square_size*40/100),i*self.square_size+(self.square_size*40/100),j*self.square_size+self.square_size-(self.square_size*40/100),i*self.square_size+self.square_size-(self.square_size*40/100),outline="",fill= "silver",tags=f"Pawn{i}{j}",state=state)
         self.canvas.tag_bind(f"Pawn{i}{j}","<Button-1>",lambda event, i=i,j=j,team=team:self.hilighte_chanel(i, j, team))
-        
+    
     def createPawn(self, i, j, team, state="disable"): # method ใช้สร้างตัวหมากโดยไม่ต้องเขียนยาว
         self.canvas.create_oval(j*self.square_size+(self.square_size*10/100),i*self.square_size+(self.square_size*10/100),j*self.square_size+self.square_size-(self.square_size*10/100),i*self.square_size+self.square_size-(self.square_size*10/100),width=0,fill=team,tags=f"Pawn{i}{j}",state=state)
         self.canvas.tag_bind(f"Pawn{i}{j}","<Button-1>",lambda event, i=i,j=j,team=team:self.hilighte_chanel(i, j, team))
@@ -69,7 +141,8 @@ class GameCheckers:
                         self.canvas.itemconfigure(f"Pawn{i}{j}",outline="",width=0,state="normal")
                 else:
                     if "W" in self.data[i][j]:
-                        self.canvas.itemconfigure(f"Pawn{i}{j}",outline="",width=0,state="normal")       
+                        self.canvas.itemconfigure(f"Pawn{i}{j}",outline="",width=0,state="normal")
+                self.check_canAttack(self.turn)   
 
 
     def hilighte_chanel(self, i, j, team):
@@ -413,6 +486,7 @@ class GameCheckers:
             
     def is_Loss(self):
         loss = True
+        # เช็คว่าแพ้หรือยัง จะเช็คหมากทุกตัวว่าสามารถเดินหรือกินได้ไหม
         if (self.turn == 'black'):
             for i in range(8):
                 for j in range(8):
@@ -454,7 +528,8 @@ class GameCheckers:
         if loss:
             self.endGame()
 
-                              
+filePath_data = "Data_Checkers.txt"
+filePath_turn = "Turn_Checkers.txt"            
 root = Tk()
 game = GameCheckers(root)
 root.mainloop()
