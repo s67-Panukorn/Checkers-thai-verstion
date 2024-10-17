@@ -28,11 +28,8 @@ class GameCheckers:
         self.info.delete(self.txtTurn)
         self.info.delete(self.recTurn)
         # ลบปุ่ม save และ load
-        self.btnSave.destroy()
-        self.btnLoad.destroy()
-        # สร้างปุ่มกดออก
-        self.btnExit = Button(self.info,text="Exit",font=('Helvetica', int(self.square_size*15/100), 'bold'), command = lambda:self.root.destroy())
-        self.btnExit.place(x=self.square_size, y=int(self.square_size*6), width=self.square_size*2, height=int(self.square_size*50/100))
+        self.btnSave.configure(state="disabled")
+        self.btnLoad.configure(state="disabled")
         # สร้างกราฟฟิกบอกฝ่ายที่ชนะ
         self.canvas.create_rectangle(0, 0, self.square_size*8, self.square_size*8, fill=winner, outline='')
         self.canvas.create_text(self.square_size*4,self.square_size*3,text="The Winner is ...", font=('Times', int(self.square_size*40/100), 'italic'), fill=self.turn)
@@ -46,6 +43,8 @@ class GameCheckers:
         self.txtTurn = self.info.create_text(self.square_size*2, self.square_size*2,text="Turn  :  "+self.turn.capitalize(), font=('Helvetica', int(self.square_size*15/100), 'bold'), fill='#0a0a0a')
         self.recTurn = self.info.create_rectangle(int(self.square_size*2-self.square_size*80/100), int(self.square_size*2.2), int(self.square_size*2+self.square_size*80/100), int(self.square_size*2.2)+int(self.square_size*35/100), fill=self.turn, outline="silver")
         # ปุ่ม Restart Save Load
+        self.btnExit = Button(self.info,text="Exit",font=('Helvetica', int(self.square_size*15/100), 'bold'), command = lambda:self.root.destroy())
+        self.btnExit.place(x=self.square_size, y=int(self.square_size*4.4), width=self.square_size*2, height=int(self.square_size*50/100))
         self.btnRestart = Button(self.info,text="Restart",font=('Helvetica', int(self.square_size*15/100), 'bold'), command = lambda:self.restartGame())
         self.btnRestart.place(x=self.square_size, y=int(self.square_size*5.2), width=self.square_size*2, height=int(self.square_size*50/100))
         self.btnSave = Button(self.info,text="Save",font=('Helvetica', int(self.square_size*15/100), 'bold'), command = lambda:self.saveGame())
@@ -97,6 +96,7 @@ class GameCheckers:
                 self.canvas.delete(f"Chanel{i}{j}") 
         self.info.delete(self.txtTurn)
         self.info.delete(self.recTurn)
+        self.btnExit.destroy()
         self.data = [["0","B","0","B","0","B","0","B"],
                      ["B","0","B","0","B","0","B","0"],
                      ["0","1","0","1","0","1","0","1"],
